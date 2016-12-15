@@ -1,23 +1,27 @@
 <!DOCTYPE html>
 <head>
   <script type="text/javascript" src="d3.v3.min.js" charset="utf-8"></script>
-  <style>
-    body { font-family: 'Roboto'; font-weight: 100;}
-    .axis path, .axis line { fill: none; stroke: #000; }
-  </style>
+  <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i,900" rel="stylesheet">
+  <link href="styles.css" rel="stylesheet">
 </head>
 <body>
-
-<h4>MindRider</h4>
-          
-<form>
-  <label><input type="radio" name="mode" value="grouped"> Grouped</label>
-  <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
-</form> 
+<div id="main">
+  <h4>MindRider 2016: Total Number of Hotspots and Sweetspots per Rider</h4>          
+  <form>
+    <label><input type="radio" name="mode" value="grouped"> Grouped</label>
+    <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
+  </form> 
     
-<div id="chart-svg"></div>
-
+  <div id="chart-svg"></div>
+  <p>*Truncated to Protect Riders' Privacy.</p>
+</div>
 <script>
+
+// Bar chart via https://bl.ocks.org/mbostock/3943967
+// Implementing data using .csv via https://github.com/DeBraid/www.cacheflow.ca/blob/master/styles/js/d3kickchart.js
+// Tooltips via http://bl.ocks.org/Caged/6476579
+// X-axis label via http://bl.ocks.org/phoebebright/3061203
 
 var n = 2, // number of layers
     m = 20; // number of samples per layer
@@ -36,12 +40,13 @@ d3.csv("viz.csv", function (data){
     
     var headers = ["hotspots", "sweetspots"];
     
+    // Re-map the data from .csv into arrays: 
     var layers = d3.layout.stack()(headers.map(function(header) {
         return data.map(function(d) {
           return {x: d.alias, y: +d[header]};
         });
     }));
-console.log(layers);
+
     var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); });
     var yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
@@ -55,18 +60,17 @@ console.log(layers);
 
     var color = d3.scale.ordinal()
         .domain(headers)
-        .range(["#FE5C5C", "#91B54D"]); // new pantone greenery COY... lol
+        .range(["#DB0000", "#59A737"]); 
       
     var xAxis = d3.svg.axis()
         .scale(xScale)
-        .tickSize(0)
-        .tickPadding(20)
+        .tickPadding(15)
         .orient("bottom");
 
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left")
-        .tickFormat(d3.format(".2s"));
+        .tickFormat(d3.format("1s"));
 
     var layer = svg.selectAll(".layer")
         .data(layers)
@@ -74,29 +78,40 @@ console.log(layers);
         .attr("class", "layer")
         .style("fill", function(d, i) { return color(i); });
 
+    // Tooltip setup:
+    var tip = d3.tip()
+      .attr('class', 'd3-tip')
+      .offset([-10, 0])
+      .html(function(d){ return d.y });
+
+    svg.call(tip);
+
     var rect = layer.selectAll("rect")
         .data(function(d) { return d; })
         .enter().append("rect")
         .attr("x", function(d) { return xScale(d.x); })
         .attr("y", height)
         .attr("width", xScale.rangeBand())
-        .attr("height", 0);
+        .attr("height", 0)
+        .attr("class", "bar")
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide);
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
         .attr("y", function(d) { return y(d.y0 + d.y); })
         .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); });
 
-    //********** AXES ************
+    // Axes:
     svg.append("g")
         .attr("class", "x axis")
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
         .selectAll("text").style("text-anchor", "end")
-            .attr("dx", "-.8em")
-            .attr("dy", "-.93em")
+            .attr("dx", "-.5em")
+            .attr("dy", ".15em")
             .attr("transform", function(d) {
-                  return "rotate(-90)" 
+                  return "rotate(-45)" 
                 });
     
     svg.append("g")
@@ -105,11 +120,13 @@ console.log(layers);
         .call(yAxis)
       .append("text")
         .attr("transform", "rotate(-90)")
-        .attr({"x": -75, "y": -70})
+        .attr({"x": -75, "y": -80})
         .attr("dy", ".75em")
         .style("text-anchor", "end")
-        .text("Number of Mental States");
+        .text("Number of Mental States")
+        .style("font-weight", "600");
 
+    // Legend:
     var legend = svg.selectAll(".legend")
         .data(headers.slice().reverse())
             .enter().append("g")
@@ -132,6 +149,7 @@ console.log(layers);
 
     d3.selectAll("input").on("change", change);
 
+    // Initial transform demonstration on timeout:
     var timeout = setTimeout(function() {
       d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
     }, 2000);
@@ -145,14 +163,13 @@ console.log(layers);
     function transitionGrouped() {
       y.domain([0, yGroupMax]).nice();
 
-      //declare y axis again so it updates
+      // Declare y axis again so it updates:
       var yAxis = d3.svg.axis()
           .scale(y)
           .orient("left")
-          .tickFormat(d3.format(".2s"));
-      //find yAxis and update it
-      svg.selectAll("g.y.axis")
-              .call(yAxis);﻿
+          .tickFormat(d3.format(".1s"));
+      // Find yAxis and update it:
+      svg.selectAll("g.y.axis").call(yAxis);
 
       rect.transition()
           .duration(500)
@@ -162,29 +179,18 @@ console.log(layers);
         .transition()
           .attr("y", function(d) { return y(d.y); })
           .attr("height", function(d) { return height - y(d.y); });
-          
-
-      // rect.on("mouseover", function() { tooltip.style("display", null); })
-      //   .on("mouseout", function() { tooltip.style("display", "none"); })
-      //   .on("mousemove", function(d) {
-      //     var xPosition = d3.mouse(this)[0] - 15;
-      //     var yPosition = d3.mouse(this)[1] - 25;
-      //     tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
-      //     tooltip.select("text").text("hello world");
-      //   });
     };
 
     function transitionStacked() {
       y.domain([0, yStackMax]).nice();
 
-      //declare y axis again so it updates
+      // Declare y axis again so it updates:
       var yAxis = d3.svg.axis()
           .scale(y)
           .orient("left")
-          .tickFormat(d3.format(".2s"));
-      //find yAxis and update it
-      svg.selectAll("g.y.axis")
-              .call(yAxis);﻿
+          .tickFormat(d3.format(".1s"));
+      // Find yAxis and update it:
+      svg.selectAll("g.y.axis").call(yAxis);﻿
 
       rect.transition()
           .duration(500)
@@ -194,33 +200,14 @@ console.log(layers);
         .transition()
           .attr("x", function(d) { return xScale(d.x); })
           .attr("width", xScale.rangeBand());
-
-      // rect.on("mouseover", function() { tooltip.style("display", null); })
-      //   .on("mouseout", function() { tooltip.style("display", "none"); })
-      //   .on("mousemove", function(d) {
-      //     var xPosition = d3.mouse(this)[0] - 15;
-      //     var yPosition = d3.mouse(this)[1] - 25;
-      //     console.log(xPosition);
-      //     tooltip.attr("transform", "translate(" + xPosition + "," + yPosition + ")");
-      //     tooltip.select("text").text("hello world");
-      //   });
     };
 
-    // var tooltip = svg.append("g")
-    //     .attr("class", "tooltip");
-        
-    // tooltip.append("rect")
-    //     .attr("width", 30)
-    //     .attr("height", 20)
-    //     .attr("fill", "red")
-    //     .style("opacity", 0.5);
-     
-    // tooltip.append("text")
-    //     .attr("x", 15)
-    //     .attr("dy", "1.2em")
-    //     .style("text-anchor", "middle")
-    //     .attr("font-size", "12px")
-    //     .attr("font-weight", "bold");
+    // X-axis label:
+    svg.append("text")
+          .attr("text-anchor", "middle")
+          .attr("transform", "translate("+ (width/2) +","+(height+100)+")")
+          .text("Rider's Alias*")
+          .style("font-weight", "600");
 });
 
 </script>
