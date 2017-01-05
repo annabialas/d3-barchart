@@ -11,17 +11,17 @@ GROUP BY R.alias, DT.date, DT.time
 HAVING (avg_attention >= 90 AND avg_meditation <= 30) OR (avg_attention <= 30 AND avg_meditation >= 90)
 ORDER BY R.alias, DT.date, DT.time ASC;
 
--- SELECT avg_attention, COUNT(avg_attention) AS attn_occurrence
--- FROM averages
--- GROUP BY avg_attention
--- ORDER BY attn_occurrence DESC
--- LIMIT 5;
--- 
--- SELECT avg_meditation, COUNT(avg_meditation) AS meditation_occurrence
--- FROM averages
--- GROUP BY avg_meditation
--- ORDER BY meditation_occurrence DESC
--- LIMIT 5;
+SELECT avg_attention, COUNT(avg_attention) AS attn_occurrence
+FROM averages
+GROUP BY avg_attention
+ORDER BY attn_occurrence DESC
+LIMIT 5;
+
+SELECT avg_meditation, COUNT(avg_meditation) AS meditation_occurrence
+FROM averages
+GROUP BY avg_meditation
+ORDER BY meditation_occurrence DESC
+LIMIT 5;
 
 CREATE VIEW datetime AS
 SELECT alias, CONCAT(date, ' ', time) AS datetime, avg_attention, avg_meditation 
@@ -35,7 +35,7 @@ SELECT alias, datetime, avg_attention, avg_meditation
 FROM datetime
 WHERE avg_attention >= 90;
 
--- CREATE VIEW hotspots AS
+CREATE VIEW hotspots AS
 SELECT 
     FROM_UNIXTIME(unix_timestamp(datetime) - unix_timestamp(datetime) mod 3600) AS benchmark, 
     alias, 
@@ -46,7 +46,7 @@ AND datetime between DATE_SUB('2016-04-25 00:00:00', INTERVAL 6 HOUR) and '2016-
 GROUP BY alias, benchmark
 ORDER BY num_hotspots desc;
 
--- CREATE VIEW sweetspots AS
+CREATE VIEW sweetspots AS
 SELECT 
     FROM_UNIXTIME(unix_timestamp(datetime) - unix_timestamp(datetime) mod 3600) AS benchmark, 
     alias, 
@@ -67,12 +67,12 @@ FROM sweetspots
 GROUP BY alias
 ORDER BY SUM(num_sweetspots) DESC;
 
--- SELECT alias, COUNT(alias) AS how_many_rides
--- FROM hotspots
--- GROUP BY alias
--- ORDER BY COUNT(alias) DESC;
--- 
--- SELECT alias, COUNT(alias) AS how_many_rides
--- FROM sweetspots
--- GROUP BY alias
--- ORDER BY COUNT(alias) DESC;
+SELECT alias, COUNT(alias) AS how_many_rides
+FROM hotspots
+GROUP BY alias
+ORDER BY COUNT(alias) DESC;
+
+SELECT alias, COUNT(alias) AS how_many_rides
+FROM sweetspots
+GROUP BY alias
+ORDER BY COUNT(alias) DESC;
