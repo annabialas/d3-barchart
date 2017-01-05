@@ -17,7 +17,7 @@ var svg = d3.select("#chart-svg").append("svg")
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.csv("../data/viz.csv", function (data){
+d3.csv("./data/viz.csv", function (data){
     
     var headers = ["hotspots", "sweetspots"];
     
